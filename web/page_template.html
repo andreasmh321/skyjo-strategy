@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skyjo vs the Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* one visual world: an airy sky-blue table, paper cards, navy ink; kite yellow marks what you can click */
+  --sky: #cfe2ec;
+  --sky-deep: #a9c9da;
+  --paper: #fbfaf5;
+  --ink: #1c2a44;
+  --ink-soft: #4c5d7a;
+  --kite: #f4b41a;
+  /* card value bands, as on the real cards */
+  --band-neg: #3c3f9c;
+  --band-zero: #4fb0e3;
+  --band-low: #56a94f;
+  --band-mid: #eec22c;
+  --band-high: #dc4c3c;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  /* layout: table on the left (agent board, piles, your board), the agent's thinking on the right */
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--sky); color: var(--ink); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.45;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 12% 8%, rgba(255,255,255,.55), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 88% 92%, rgba(255,255,255,.45), transparent 70%);
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.app { max-width: 1180px; margin: 0 auto; padding: 18px 18px 28px; display: grid;
+       grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start; }
+header.top { grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.wordmark { font-family: var(--font-display); font-size: 34px; line-height: 1; letter-spacing: .5px; margin: 0; }
+.wordmark small { font-family: var(--font-body); font-size: 15px; color: var(--ink-soft); letter-spacing: 0; margin-left: 8px; }
+.scores { margin-left: auto; display: flex; gap: 10px; align-items: stretch; font-variant-numeric: tabular-nums; }
+.score { background: var(--paper); border-radius: 12px; padding: 6px 14px; min-width: 108px;
+         box-shadow: 0 2px 0 var(--sky-deep); }
+.score .who { font-size: 13px; color: var(--ink-soft); }
+.score .pts { font-family: var(--font-display); font-size: 26px; line-height: 1.05; }
+.score.round .pts { font-size: 20px; padding-top: 4px; }
+.score.lead .pts::after { content: " ▲"; font-size: 13px; color: var(--band-low); vertical-align: middle; }
+
+/* table */
+.table { display: flex; flex-direction: column; gap: 16px; }
+.seat { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.seat-label { align-self: stretch; justify-content: center; }
+.seat-label { display: flex; align-items: baseline; gap: 10px; font-weight: 700; }
+.seat-label .est { font-weight: 400; color: var(--ink-soft); font-size: 14px; font-variant-numeric: tabular-nums; }
+.board { display: grid; grid-template-columns: repeat(4, var(--cw)); grid-template-rows: repeat(3, var(--ch));
+         gap: 8px; --cw: 74px; --ch: 100px; }
+.board.agent { --cw: 58px; --ch: 78px; }
+.middle { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; background: rgba(255,255,255,.35);
+          border-radius: 16px; padding: 14px 16px; }
+.pile { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--ink-soft); }
+.pile .card { --cw: 74px; --ch: 100px; width: var(--cw); height: var(--ch); }
+.prompt { flex: 1 1 220px; min-width: 200px; }
+.prompt .say { font-size: 18px; font-weight: 700; text-wrap: balance; }
+.prompt .sub { color: var(--ink-soft); font-size: 14px; margin-top: 2px; }
+.prompt .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.btn { border: 2px solid var(--ink); background: var(--paper); border-radius: 999px; padding: 6px 14px;
+       font-weight: 700; cursor: pointer; }
+.btn:hover { background: #fff; }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: #2b3d61; }
+.btn[hidden] { display: none; }
+.banner { background: var(--ink); color: var(--paper); border-radius: 12px; padding: 8px 14px; font-weight: 700; }
+.banner[hidden] { display: none; }
+
+/* cards */
+.card { position: relative; width: var(--cw); height: var(--ch); border-radius: 10px; border: 0; padding: 0;
+        background: transparent; perspective: 600px; }
+.card .face { position: absolute; inset: 0; border-radius: 10px; display: grid; place-items: center;
+              backface-visibility: hidden; transition: transform .35s ease; }
+.card .front { background: var(--paper); transform: rotateY(180deg); box-shadow: 0 2px 0 rgba(28,42,68,.25); }
+.card .front .inner { position: absolute; inset: 5px; border-radius: 7px; display: grid; place-items: center;
+                      background: var(--band); }
+.card .front .num { font-family: var(--font-display); font-size: calc(var(--cw) * .5); line-height: 1; color: #fff;
+                    text-shadow: 0 2px 0 rgba(0,0,0,.25); font-variant-numeric: tabular-nums; }
+.card .front .corner { position: absolute; top: 3px; left: 6px; font-family: var(--font-display);
+                       font-size: calc(var(--cw) * .17); color: rgba(255,255,255,.9); }
+.card .back { background: var(--ink); box-shadow: 0 2px 0 rgba(28,42,68,.35);
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0 6px, transparent 6px 12px); }
+.card .back::after { content: ""; position: absolute; inset: 7px; border: 2px solid rgba(207,226,236,.35); border-radius: 6px; }
+.card.up .front { transform: rotateY(0); }
+.card.up .back { transform: rotateY(-180deg); }
+.card.gone .face { display: none; }
+.card.gone { border: 2px dashed var(--sky-deep); border-radius: 10px; }
+.card.empty { border: 2px dashed var(--sky-deep); border-radius: 10px; }
+.card.empty .face { display: none; }
+.card.clickable { cursor: pointer; }
+.card.clickable .face { box-shadow: 0 0 0 3px var(--kite), 0 4px 0 rgba(28,42,68,.25); }
+.card.clickable:hover .face { transform-origin: center; }
+.card.clickable:hover.up .front, .card.clickable:hover:not(.up) .back { translate: 0 -3px; }
+.card.hint::before { content: ""; position: absolute; inset: -6px; border: 3px dashed var(--ink); border-radius: 14px; z-index: 2; pointer-events: none; }
+.card.moved .face { animation: pop .5s ease; }
+@keyframes pop { 0% { scale: 1; } 40% { scale: 1.08; } 100% { scale: 1; } }
+.b-neg { --band: var(--band-neg); } .b-zero { --band: var(--band-zero); } .b-low { --band: var(--band-low); }
+.b-mid { --band: var(--band-mid); } .b-high { --band: var(--band-high); }
+.b-mid .num, .b-mid .corner { color: var(--ink) !important; text-shadow: none !important; }
+
+/* agent's thinking */
+aside.mind { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.panel { background: var(--paper); border-radius: 16px; padding: 14px 16px; box-shadow: 0 2px 0 var(--sky-deep); }
+.panel h2 { font-family: var(--font-display); font-weight: 400; font-size: 21px; margin: 0 0 8px; letter-spacing: .3px; }
+.meter { position: relative; height: 26px; border-radius: 999px; background: var(--sky); overflow: hidden; }
+.meter .fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); width: 50%; transition: width .5s ease; }
+.meter .val { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; color: var(--paper);
+              mix-blend-mode: difference; font-variant-numeric: tabular-nums; }
+.note { color: var(--ink-soft); font-size: 13px; margin-top: 6px; }
+.options { display: flex; flex-direction: column; gap: 7px; }
+.opt { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; font-size: 14px; }
+.opt .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--sky); overflow: hidden; margin-top: -4px; }
+.opt .bar i { display: block; height: 100%; background: var(--ink-soft); }
+.opt.chosen .bar i { background: var(--kite); }
+.opt.chosen .lab { font-weight: 700; }
+.opt .p { text-align: right; font-variant-numeric: tabular-nums; }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 240px;
+       overflow-y: auto; font-size: 14px; }
+.log li { padding-left: 12px; border-left: 3px solid var(--sky); }
+.log li.agent { border-left-color: var(--ink); }
+.log li.you { border-left-color: var(--kite); }
+.log li.round { border-left-color: var(--band-high); font-weight: 700; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--ink); }
+.hinttext { font-size: 14px; margin-top: 6px; }
+
+/* round dialog */
+.overlay { position: fixed; inset: 0; background: rgba(28,42,68,.45); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.overlay[hidden] { display: none; }
+.dialog { background: var(--paper); border-radius: 18px; padding: 20px 22px; width: min(460px, 100%); box-shadow: 0 6px 0 rgba(28,42,68,.4); }
+.dialog h3 { font-family: var(--font-display); font-weight: 400; font-size: 28px; margin: 0 0 4px; }
+.dialog table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; font-variant-numeric: tabular-nums; }
+.dialog th, .dialog td { text-align: right; padding: 6px 4px; border-bottom: 1px solid var(--sky); }
+.dialog th:first-child, .dialog td:first-child { text-align: left; }
+.dialog .x2 { color: var(--band-high); font-weight: 700; }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  aside.mind { position: static; }
+}
+@media (max-width: 520px) {
+  .board { --cw: 64px; --ch: 88px; gap: 6px; }
+  .board.agent { --cw: 50px; --ch: 68px; }
+  .pile .card { --cw: 60px; --ch: 82px; }
+  .scores { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card .face, .meter .fill { transition: none; }
+  .card.moved .face { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1 class="wordmark">Skyjo <small>you against a trained neural network, first to 100 loses</small></h1>
+    <div class="scores" aria-live="polite">
+      <div class="score" id="sc-you"><div class="who">You</div><div class="pts" id="tot-you">0</div></div>
+      <div class="score" id="sc-agent"><div class="who">Agent</div><div class="pts" id="tot-agent">0</div></div>
+      <div class="score round"><div class="who">Round</div><div class="pts" id="round-no">1</div></div>
+    </div>
+  </header>
+
+  <main class="table">
+    <section class="seat" aria-label="Agent's cards">
+      <div class="seat-label">Agent <span class="est" id="est-agent"></span></div>
+      <div class="board agent" id="board-agent"></div>
+    </section>
+
+    <section class="middle" aria-label="Piles">
+      <div class="pile"><button class="card" id="deck" aria-label="Draw pile"><span class="face back"></span><span class="face front"><span class="inner"></span></span></button><span id="deck-count">Draw pile</span></div>
+      <div class="pile"><button class="card up" id="discard" aria-label="Discard pile"></button><span>Discard pile</span></div>
+      <div class="pile"><div class="card empty" id="hand" aria-label="Card in hand"></div><span id="hand-label">In hand</span></div>
+      <div class="prompt">
+        <div class="banner" id="banner" hidden></div>
+        <div class="say" id="say" aria-live="polite"></div>
+        <div class="sub" id="sub"></div>
+        <div class="actions">
+          <button class="btn" id="btn-discard" hidden>Discard it and reveal a card</button>
+          <button class="btn" id="btn-back" hidden>Keep the card after all</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="seat" aria-label="Your cards">
+      <div class="seat-label">You <span class="est" id="est-you"></span></div>
+      <div class="board" id="board-you"></div>
+    </section>
+  </main>
+
+  <aside class="mind" aria-label="What the agent is thinking">
+    <div class="panel">
+      <h2>Agent's chances</h2>
+      <div class="meter" role="img" id="meter-wrap" aria-label="Agent's estimate of its chance to win"><div class="fill" id="meter"></div><div class="val" id="meter-val">–</div></div>
+      <div class="note">Its own estimate of winning the whole game, from its value network. It was trained against bots, so against you it may be off.</div>
+    </div>
+    <div class="panel">
+      <h2>Its last decision</h2>
+      <div class="options" id="options"><div class="note">The agent's options and how strongly it favoured each appear here when it moves.</div></div>
+    </div>
+    <div class="panel">
+      <label class="toggle"><input type="checkbox" id="hint-on"> Show what the agent would do in my place</label>
+      <div class="hinttext" id="hinttext"></div>
+    </div>
+    <div class="panel">
+      <h2>Moves</h2>
+      <ol class="log" id="log"></ol>
+      <div class="actions" style="margin-top:10px"><button class="btn" id="btn-new">Start a new game</button></div>
+    </div>
+  </aside>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+    <h3 id="dlg-title">Round over</h3>
+    <div id="dlg-text"></div>
+    <table id="dlg-table"></table>
+    <button class="btn primary" id="dlg-btn">Next round</button>
+  </div>
+</div>
+
+<script id="weights" type="application/json">/*WEIGHTS*/</script>
+<script>/*CORE*/</script>
+<script>
+(function () {
+  const C = window.SkyjoCore;
+  const YOU = 0, AGENT = 1;
+  const rnd = Math.random;
+  const W = JSON.parse(document.getElementById("weights").textContent);
+  const net = C.loadNet(W.b64, W.meta);
+  const $ = (id) => document.getElementById(id);
+  let S = null, busy = false, flipMode = false, lastAgent = null, winEst = null, logItems = [], lastMoved = null;
+
+  // ---------------------------------------------------------- helpers
+  const band = (v) => v < 0 ? "b-neg" : v === 0 ? "b-zero" : v <= 4 ? "b-low" : v <= 8 ? "b-mid" : "b-high";
+  const colOf = (p) => Math.floor(p / 3) + 1, rowOf = (p) => (p % 3) + 1;
+  function cardInner(v) {
+    return `<span class="face back"></span><span class="face front"><span class="inner"><span class="corner">${v}</span><span class="num">${v}</span></span></span>`;
+  }
+  function estimate(pl) {
+    const { E } = C.expectedHidden(S);
+    let s = 0, h = 0;
+    for (let p = 0; p < 12; p++) {
+      if (S.st[pl][p] === C.REVEALED) s += S.values[pl][p];
+      else if (S.st[pl][p] === C.HIDDEN) h++;
+    }
+    return { visible: s, hidden: h, est: s + h * E };
+  }
+  function say(main, sub) { $("say").textContent = main; $("sub").textContent = sub || ""; }
+  function log(text, cls) {
+    logItems.push({ text, cls });
+    const li = document.createElement("li");
+    li.textContent = text; li.className = cls || "";
+    $("log").prepend(li);
+  }
+  function snapshot() { return { S, winEst, lastAgent, logItems }; }
+  window.claude?.hot?.snapshot?.(snapshot);
+
+  // ---------------------------------------------------------- rendering
+  function legalNow() { return S && S.cur === YOU ? C.legalMask(S) : new Array(26).fill(false); }
+
+  function renderBoard(pl, el) {
+    const legal = legalNow(), mine = pl === YOU && !busy && S.cur === YOU;
+    const hintA = currentHint();
+    el.innerHTML = "";
+    for (let row = 0; row < 3; row++) for (let col = 0; col < 4; col++) {
+      const p = col * 3 + row, st = S.st[pl][p], v = S.values[pl][p];
+      const b = document.createElement(pl === YOU ? "button" : "div");
+      b.className = "card " + band(v);
+      if (st === C.REMOVED) { b.className = "card gone"; b.setAttribute("aria-label", "removed column"); }
+      else {
+        b.innerHTML = cardInner(v);
+        if (st === C.REVEALED) b.classList.add("up");
+        b.setAttribute("aria-label", `${pl === YOU ? "Your" : "Agent's"} card, column ${col + 1} row ${row + 1}, ${st === C.REVEALED ? v : "hidden"}`);
+      }
+      let can = false, act = null;
+      if (mine) {
+        if (S.phase === C.SETUP || (S.phase === C.DECIDE && flipMode)) { can = legal[C.FLIP0 + p]; act = C.FLIP0 + p; }
+        else if (S.phase === C.PLACE || S.phase === C.DECIDE) { can = legal[C.REP0 + p]; act = C.REP0 + p; }
+      }
+      if (can) { b.classList.add("clickable"); b.onclick = () => humanAct(act); }
+      else if (pl === YOU) b.disabled = true;
+      if (hintA !== null && pl === YOU && (hintA === C.REP0 + p || hintA === C.FLIP0 + p)) b.classList.add("hint");
+      if (lastMoved && lastMoved.pl === pl && lastMoved.p === p) b.classList.add("moved");
+      b.style.gridColumn = col + 1; b.style.gridRow = row + 1;
+      el.appendChild(b);
+    }
+  }
+
+  function currentHint() {
+    if (!$("hint-on").checked || !S || S.cur !== YOU || busy || S.phase === C.GAME_OVER || S.phase === "round_over") return null;
+    const m = C.agentMove(net, S);
+    if (S.phase === C.DECIDE && flipMode && m.action < C.FLIP0) return null;
+    return m.action;
+  }
+
+  function render() {
+    const you = S.totals[YOU], ag = S.totals[AGENT];
+    $("tot-you").textContent = you; $("tot-agent").textContent = ag;
+    $("sc-you").classList.toggle("lead", you < ag); $("sc-agent").classList.toggle("lead", ag < you);
+    $("round-no").textContent = S.round + 1;
+    renderBoard(AGENT, $("board-agent")); renderBoard(YOU, $("board-you"));
+    const ey = estimate(YOU), ea = estimate(AGENT);
+    $("est-you").textContent = `showing ${ey.visible}` + (ey.hidden ? `, ${ey.hidden} hidden` : "");
+    $("est-agent").textContent = `showing ${ea.visible}` + (ea.hidden ? `, ${ea.hidden} hidden` : "");
+    // piles
+    const legal = legalNow(), hintA = currentHint(), myTurn = S.cur === YOU && !busy;
+    const deck = $("deck");
+    deck.className = "card" + (myTurn && S.phase === C.CHOOSE ? " clickable" : "") + (hintA === C.DRAW ? " hint" : "");
+    deck.disabled = !(myTurn && S.phase === C.CHOOSE);
+    deck.onclick = () => humanAct(C.DRAW);
+    $("deck-count").textContent = `Draw pile (${S.deck.length})`;
+    const dc = $("discard"), top = S.disc.length ? S.disc[S.disc.length - 1] : null;
+    const canTake = myTurn && S.phase === C.CHOOSE, canDump = myTurn && S.phase === C.DECIDE && !flipMode;
+    dc.className = top === null ? "card empty" : "card up " + band(top);
+    dc.innerHTML = top === null ? "" : cardInner(top);
+    if (canTake || canDump) dc.classList.add("clickable");
+    if (hintA === C.TAKE || (hintA !== null && hintA >= C.FLIP0 && S.phase === C.DECIDE && !flipMode)) dc.classList.add("hint");
+    dc.disabled = !(canTake || canDump);
+    dc.onclick = () => canTake ? humanAct(C.TAKE) : startFlipMode();
+    dc.setAttribute("aria-label", top === null ? "Discard pile, empty" : `Discard pile, top card ${top}` + (canDump ? ", click to discard your card" : ""));
+    const hand = $("hand");
+    if (S.hand !== null && S.hand !== undefined) { hand.className = "card up " + band(S.hand); hand.innerHTML = cardInner(S.hand); }
+    else { hand.className = "card empty"; hand.innerHTML = ""; }
+    $("hand-label").textContent = S.hand === null ? "In hand" : (S.cur === YOU ? "Your card" : "Agent's card");
+    $("btn-discard").hidden = !(myTurn && S.phase === C.DECIDE && !flipMode);
+    $("btn-back").hidden = !(myTurn && S.phase === C.DECIDE && flipMode);
+    const fin = S.closer >= 0 && S.phase !== C.GAME_OVER && S.phase !== "round_over";
+    $("banner").hidden = !fin;
+    if (fin) $("banner").textContent = S.closer === AGENT ? "The agent has revealed all its cards: this is your last turn." : "You revealed all your cards: the agent gets one last turn.";
+    renderPrompt();
+    renderMind();
+    renderHintText(hintA);
+  }
+
+  function renderPrompt() {
+    if (S.phase === C.GAME_OVER || S.phase === "round_over") return;
+    if (S.cur !== YOU || busy) { say("The agent is thinking…", ""); return; }
+    if (S.phase === C.SETUP) say(`Reveal ${S.setupLeft === 2 ? "two" : "one more"} of your cards`, "Click a face-down card.");
+    else if (S.phase === C.CHOOSE) say("Take the discard or draw a card", "Click the discard pile or the draw pile.");
+    else if (S.phase === C.PLACE) say(`Place the ${S.hand}`, "Click any of your cards to swap it out. The old card goes to the discard pile.");
+    else if (flipMode) say("Reveal one of your face-down cards", `The ${S.hand} goes to the discard pile.`);
+    else say(`You drew a ${S.hand}`, "Click one of your cards to swap it in, or discard it and reveal a face-down card.");
+  }
+
+  function describeAction(a, pl, probsRow) {
+    if (a === C.TAKE) return `Take the ${S.disc[S.disc.length - 1]} from the discard pile`;
+    if (a === C.DRAW) return "Draw from the pile";
+    if (a >= C.FLIP0) return S.phase === C.SETUP ? `Reveal card in column ${colOf(a - C.FLIP0)}` : "Discard it and reveal a card";
+    const p = a - C.REP0;
+    if (S.st[pl][p] === C.HIDDEN) return `Put it on a face-down card (column ${colOf(p)})`;
+    return `Swap it with the ${S.values[pl][p]} in column ${colOf(p)}`;
+  }
+
+  function groupOptions(probs, pl) {
+    // flips (except during setup) are one option: which card gets revealed hardly matters
+    const groups = new Map();
+    for (let a = 0; a < 26; a++) {
+      if (probs[a] < 0.005) continue;
+      const key = (a >= C.FLIP0 && S.phase !== C.SETUP) ? "flip" : String(a);
+      const g = groups.get(key) || { a, label: describeAction(a, pl), p: 0 };
+      g.p += probs[a]; groups.set(key, g);
+    }
+    return [...groups.values()].sort((x, y) => y.p - x.p).slice(0, 5);
+  }
+
+  function renderMind() {
+    const m = $("meter"), mv = $("meter-val");
+    if (winEst === null) { m.style.width = "50%"; mv.textContent = "–"; }
+    else { m.style.width = (winEst * 100).toFixed(0) + "%"; mv.textContent = Math.round(winEst * 100) + "%"; }
+    $("meter-wrap").setAttribute("aria-label", winEst === null ? "No estimate yet" : `Agent estimates ${Math.round(winEst * 100)}% chance to win`);
+    if (!lastAgent) return;
+    const box = $("options");
+    box.innerHTML = `<div class="note">${lastAgent.context}</div>` + lastAgent.opts.map((o) =>
+      `<div class="opt${o.chosen ? " chosen" : ""}"><span class="lab">${o.label}</span><span class="p">${Math.round(o.p * 100)}%</span><span class="bar"><i style="width:${(o.p * 100).toFixed(1)}%"></i></span></div>`).join("");
+  }
+
+  function renderHintText(hintA) {
+    const el = $("hinttext");
+    if (!$("hint-on").checked) { el.textContent = ""; return; }
+    if (hintA === null) { el.textContent = S.cur === YOU ? "" : "Hints appear on your turn."; return; }
+    const m = C.agentMove(net, S);
+    const opts = groupOptions(m.probs, YOU);
+    el.textContent = `It would: ${opts[0].label.toLowerCase()} (${Math.round(opts[0].p * 100)}% sure). Marked with a dashed outline.`;
+  }
+
+  // ---------------------------------------------------------- moves
+  function narrate(info, who) {
+    const name = who === YOU ? "You" : "Agent";
+    if (info.phase === C.SETUP) return `${name} revealed a ${info.revealed}.`;
+    if (info.took !== undefined) return `${name} took the ${info.took} from the discard pile.`;
+    if (info.drew !== undefined) return who === YOU ? `You drew a ${info.drew}.` : `Agent drew a ${info.drew}.`;
+    let t;
+    if (info.replaced !== undefined) t = info.wasHidden
+      ? `${name} put the ${info.card} on a face-down card, which was a ${info.replaced}.`
+      : `${name} swapped the ${info.card} for ${who === YOU ? "your" : "its"} ${info.replaced}.`;
+    else t = `${name} discarded the ${info.discarded} and revealed a ${info.flipped}.`;
+    if (info.triples && info.triples.length) t += ` Column of ${info.card ?? info.flipped}s complete: removed!`;
+    if (info.closedRound) t += who === YOU ? " All your cards are face up." : " All its cards are face up.";
+    return t;
+  }
+
+  function apply(a, who) {
+    const info = C.step(S, a, rnd);
+    lastMoved = info.pos !== undefined ? { pl: who, p: info.pos } : (S.phase === C.SETUP || info.phase === C.SETUP ? { pl: who, p: a - C.FLIP0 } : null);
+    log(narrate(info, who), who === YOU ? "you" : "agent");
+    return info;
+  }
+
+  function humanAct(a) {
+    if (busy || S.cur !== YOU) return;
+    flipMode = false;
+    apply(a, YOU);
+    afterMove();
+  }
+  function startFlipMode() { flipMode = true; render(); }
+  $("btn-discard").onclick = startFlipMode;
+  $("btn-back").onclick = () => { flipMode = false; render(); };
+
+  function afterMove() {
+    if (S.phase === "round_over" || S.phase === C.GAME_OVER) { render(); showRound(); return; }
+    render();
+    if (S.cur === AGENT) agentTurn();
+  }
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, matchMedia("(prefers-reduced-motion: reduce)").matches ? Math.min(ms, 150) : ms));
+
+  async function agentTurn() {
+    busy = true; render();
+    while (S.cur === AGENT && S.phase !== "round_over" && S.phase !== C.GAME_OVER) {
+      await wait(S.phase === C.SETUP ? 350 : 650);
+      const m = C.agentMove(net, S);
+      winEst = (m.value + 1) / 2;
+      const opts = groupOptions(m.probs, AGENT);
+      const chosenKey = (m.action >= C.FLIP0 && S.phase !== C.SETUP) ? "flip" : m.action;
+      opts.forEach((o) => { o.chosen = ((o.a >= C.FLIP0 && S.phase !== C.SETUP) ? "flip" : o.a) === chosenKey; });
+      const ctx = S.phase === C.CHOOSE ? `Discard pile shows a ${S.disc[S.disc.length - 1]}.`
+                : S.phase === C.SETUP ? "Choosing which card to reveal."
+                : `Holding a ${S.hand}.`;
+      lastAgent = { opts, context: ctx };
+      apply(m.action, AGENT);
+      render();
+    }
+    busy = false;
+    afterMove();
+  }
+
+  // ---------------------------------------------------------- rounds
+  function showRound() {
+    const h = S.history[S.history.length - 1];
+    const over = S.phase === C.GAME_OVER;
+    const names = ["You", "Agent"];
+    let text = `${names[h.closer]} ended the round.`;
+    if (h.doubled) text += ` ${h.closer === YOU ? "You weren't" : "The agent wasn't"} strictly lowest, so ${h.closer === YOU ? "your" : "its"} score is doubled.`;
+    log(`Round ${S.history.length}: you ${h.scores[0]}, agent ${h.scores[1]}.`, "round");
+    $("dlg-text").textContent = text;
+    $("dlg-table").innerHTML = `<tr><th></th><th>Cards</th><th>Round</th><th>Total</th></tr>` + [0, 1].map((i) =>
+      `<tr><td>${names[i]}</td><td>${h.raw[i]}</td><td class="${h.doubled && i === h.closer ? "x2" : ""}">${h.scores[i]}${h.doubled && i === h.closer ? " (×2)" : ""}</td><td>${S.totals[i]}</td></tr>`).join("");
+    if (over) {
+      const youWin = S.totals[YOU] < S.totals[AGENT], tie = S.totals[YOU] === S.totals[AGENT];
+      $("dlg-title").textContent = tie ? "A draw" : youWin ? "You beat the agent" : "The agent wins";
+      $("dlg-text").textContent = text + ` Someone reached ${S.endScore}, so the game is over: lowest total wins.`;
+      $("dlg-btn").textContent = "Play again";
+    } else {
+      $("dlg-title").textContent = `Round ${S.history.length} over`;
+      $("dlg-btn").textContent = "Next round";
+    }
+    $("overlay").hidden = false;
+    $("dlg-btn").focus();
+  }
+  $("dlg-btn").onclick = () => {
+    $("overlay").hidden = true;
+    if (S.phase === C.GAME_OVER) { newGame(); return; }
+    C.nextRound(S, rnd); lastMoved = null;
+    log(`Round ${S.round + 1} starts. ${S.nextStarter === YOU ? "You" : "The agent"} ended the last round, so ${S.nextStarter === YOU ? "you go" : "it goes"} first after revealing.`, "round");
+    render();
+    if (S.cur === AGENT) agentTurn();
+  };
+
+  // setup: you reveal first, then the agent; then the start player is fixed by the engine
+  const origStep = C.step;
+
+  function newGame() {
+    S = C.newGame(2, rnd);
+    flipMode = false; lastAgent = null; winEst = null; lastMoved = null; logItems = [];
+    $("log").innerHTML = ""; $("options").innerHTML = `<div class="note">The agent's options and how strongly it favoured each appear here when it moves.</div>`;
+    log("New game. Reveal two of your cards to start.", "round");
+    render();
+  }
+  $("btn-new").onclick = () => { if (!busy) newGame(); };
+  $("hint-on").onchange = render;
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && flipMode) { flipMode = false; render(); } });
+
+  function start(data) {
+    if (data && data.S) {
+      S = data.S; winEst = data.winEst ?? null; lastAgent = data.lastAgent ?? null; logItems = data.logItems || [];
+      for (const it of logItems) { const li = document.createElement("li"); li.textContent = it.text; li.className = it.cls || ""; $("log").prepend(li); }
+      render();
+      if (S.phase === "round_over" || S.phase === C.GAME_OVER) showRound();
+      else if (S.cur === AGENT) agentTurn();
+    } else newGame();
+  }
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>

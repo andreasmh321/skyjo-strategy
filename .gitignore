@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.nbi
+*.nbc
+.pytest_cache/
+# large generated files (regenerate with analyze_agent.py / web/export.py)
+results/decisions_*.parquet
+web/cases.json
+web/transitions.json
+web/weights.json
+runs/*/latest.pt
+runs/smoke/
+runs/cputest/
+runs/bccheck/
+runs/learning_curves.png

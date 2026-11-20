@@ -1,0 +1,5 @@
+numpy
+numba>=0.58
+cma
+pytest
+torch

@@ -1,0 +1,110 @@
+[
+ [
+  "greedy",
+  "phase1",
+  {
+   "win_rate": 0.13691666666666666,
+   "mean_round": 28.787780401416764,
+   "games": 6000,
+   "closes": 11623,
+   "doubled": 5549
+  },
+  {
+   "win_rate": 0.30683333333333335,
+   "mean_round": 28.873666666666665,
+   "games": 6000,
+   "closes": 2900,
+   "doubled": 1425
+  }
+ ],
+ [
+  "greedy",
+  "tuned_round",
+  {
+   "win_rate": 0.03675,
+   "mean_round": 34.77074786219168,
+   "games": 6000,
+   "closes": 16618,
+   "doubled": 11358
+  },
+  {
+   "win_rate": 0.23783333333333334,
+   "mean_round": 36.8675,
+   "games": 6000,
+   "closes": 5624,
+   "doubled": 4197
+  }
+ ],
+ [
+  "greedy",
+  "tuned_win",
+  {
+   "win_rate": 0.042,
+   "mean_round": 33.53505846991969,
+   "games": 6000,
+   "closes": 12480,
+   "doubled": 7738
+  },
+  {
+   "win_rate": 0.23483333333333334,
+   "mean_round": 34.029666666666664,
+   "games": 6000,
+   "closes": 3756,
+   "doubled": 2414
+  }
+ ],
+ [
+  "phase1",
+  "tuned_round",
+  {
+   "win_rate": 0.39608333333333334,
+   "mean_round": 15.920365603824132,
+   "games": 6000,
+   "closes": 29453,
+   "doubled": 9582
+  },
+  {
+   "win_rate": 0.53125,
+   "mean_round": 14.701666666666666,
+   "games": 6000,
+   "closes": 4866,
+   "doubled": 1679
+  }
+ ],
+ [
+  "phase1",
+  "tuned_win",
+  {
+   "win_rate": 0.31566666666666665,
+   "mean_round": 19.334379759425605,
+   "games": 6000,
+   "closes": 18300,
+   "doubled": 4751
+  },
+  {
+   "win_rate": 0.44808333333333333,
+   "mean_round": 19.1815,
+   "games": 6000,
+   "closes": 3551,
+   "doubled": 1002
+  }
+ ],
+ [
+  "tuned_round",
+  "tuned_win",
+  {
+   "win_rate": 0.3385,
+   "mean_round": 10.820404283177586,
+   "games": 6000,
+   "closes": 20290,
+   "doubled": 633
+  },
+  {
+   "win_rate": 0.4230833333333333,
+   "mean_round": 9.200166666666666,
+   "games": 6000,
+   "closes": 2276,
+   "doubled": 6
+  }
+ ]
+]

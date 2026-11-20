@@ -1,0 +1,86 @@
+[
+ [
+  "greedy",
+  "phase1",
+  {
+   "win_rate": 0.14041666666666666,
+   "mean_round": 28.888635113987227,
+   "games": 6000
+  },
+  {
+   "win_rate": 0.30816666666666664,
+   "mean_round": 29.19783333333333,
+   "games": 6000
+  }
+ ],
+ [
+  "greedy",
+  "tuned_round",
+  {
+   "win_rate": 0.034416666666666665,
+   "mean_round": 35.04411691480357,
+   "games": 6000
+  },
+  {
+   "win_rate": 0.24908333333333332,
+   "mean_round": 36.910666666666664,
+   "games": 6000
+  }
+ ],
+ [
+  "greedy",
+  "tuned_win",
+  {
+   "win_rate": 0.03933333333333333,
+   "mean_round": 33.614894821243276,
+   "games": 6000
+  },
+  {
+   "win_rate": 0.2385,
+   "mean_round": 34.199,
+   "games": 6000
+  }
+ ],
+ [
+  "phase1",
+  "tuned_round",
+  {
+   "win_rate": 0.4025,
+   "mean_round": 15.86578753421773,
+   "games": 6000
+  },
+  {
+   "win_rate": 0.5445833333333333,
+   "mean_round": 14.732333333333333,
+   "games": 6000
+  }
+ ],
+ [
+  "phase1",
+  "tuned_win",
+  {
+   "win_rate": 0.30983333333333335,
+   "mean_round": 19.37044389986661,
+   "games": 6000
+  },
+  {
+   "win_rate": 0.4528333333333333,
+   "mean_round": 19.291166666666665,
+   "games": 6000
+  }
+ ],
+ [
+  "tuned_round",
+  "tuned_win",
+  {
+   "win_rate": 0.339,
+   "mean_round": 10.856880733944955,
+   "games": 6000
+  },
+  {
+   "win_rate": 0.41941666666666666,
+   "mean_round": 9.084333333333333,
+   "games": 6000
+  }
+ ]
+]

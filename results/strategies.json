@@ -1,0 +1,62 @@
+{
+ "greedy": {
+  "take_gain_early": 0,
+  "take_gain_late": 0,
+  "keep_gain_early": 0,
+  "keep_gain_late": 0,
+  "hidden_bonus": 0.0,
+  "pair_bonus": 0,
+  "close_margin": -1000000000.0,
+  "close_lead_coef": 0.0,
+  "deny_weight": 0.0,
+  "end_lookahead": 0,
+  "end_margin": 0.0,
+  "setup_same_col": 0,
+  "final_turn_greedy": 1.0
+ },
+ "phase1": {
+  "take_gain_early": 1.5,
+  "take_gain_late": 1.5,
+  "keep_gain_early": 1.0,
+  "keep_gain_late": 1.0,
+  "hidden_bonus": 0.0,
+  "pair_bonus": 1.5,
+  "close_margin": 2.0,
+  "close_lead_coef": 0.0,
+  "deny_weight": 0.0,
+  "end_lookahead": 0.0,
+  "end_margin": 0.0,
+  "setup_same_col": 0.0,
+  "final_turn_greedy": 1.0
+ },
+ "tuned_round": {
+  "take_gain_early": 10.235351742169865,
+  "take_gain_late": 3.456887232658713,
+  "keep_gain_early": 5.671246503406218,
+  "keep_gain_late": 1.962419854767304,
+  "hidden_bonus": 0.278418612279434,
+  "pair_bonus": 4.410404744054187,
+  "close_margin": 36.8593965718819,
+  "close_lead_coef": 0.0,
+  "deny_weight": 0.16861176138384532,
+  "end_lookahead": 1.0,
+  "end_margin": 0.0,
+  "setup_same_col": 1.0,
+  "final_turn_greedy": 1.0
+ },
+ "tuned_win": {
+  "take_gain_early": 5.356928735430936,
+  "take_gain_late": 3.5044775806918245,
+  "keep_gain_early": 1.0534166248448855,
+  "keep_gain_late": 2.393291963966596,
+  "hidden_bonus": -1.2955222263271033,
+  "pair_bonus": 2.141106911843209,
+  "close_margin": 11.401481202916198,
+  "close_lead_coef": 1.1684291018025248,
+  "deny_weight": 0.24575758215923774,
+  "end_lookahead": 1.0,
+  "end_margin": 3.764672920498139,
+  "setup_same_col": 1.0,
+  "final_turn_greedy": 1.0
+ }
+}
